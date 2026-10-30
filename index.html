@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CashPlus</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ font-family:Arial,sans-serif;
+ background:#101010;
+ color:white;
+}
+header{
+ padding:25px 20px;
+ background:#191919;
+ border-bottom:1px solid #b89535;
+}
+.logo{font-size:28px;font-weight:bold;color:#e5bd55}
+.logo span{color:white}
+main{padding:22px;max-width:600px;margin:auto}
+h2{font-size:20px}
+.balance{
+ background:linear-gradient(135deg,#28200d,#a47c20);
+ border-radius:18px;
+ padding:25px;
+ margin:20px 0;
+}
+.balance p{color:#eee}
+.amount{font-size:32px;font-weight:bold}
+.currency{color:#f2cf68}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{
+ border:0;
+ border-radius:10px;
+ padding:15px;
+ font-weight:bold;
+ cursor:pointer;
+}
+.gold{background:#e2b94f;color:#171717}
+.dark{background:#292929;color:white}
+.card{
+ background:#1c1c1c;
+ padding:18px;
+ border-radius:14px;
+ margin-top:20px;
+}
+input{
+ width:100%;
+ padding:14px;
+ margin:10px 0;
+ border-radius:8px;
+ border:1px solid #555;
+ background:#292929;
+ color:white;
+}
+footer{text-align:center;color:#aaa;padding:30px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo">CASH<span>PLUS</span> 💛</div>
+ <p>Votre argent, vos opportunités.</p>
+</header>
+<main>
+ <h2>Bienvenue sur CashPlus</h2>
+ <div class="balance">
+  <p>Votre solde disponible</p>
+  <div class="amount">0 <span class="currency">F CFA</span></div>
+  <p>Compte de démonstration</p>
+ </div>
+ <div class="actions">
+  <button class="gold" onclick="alert('Fonction bientôt disponible')">+ Déposer</button>
+  <button class="dark" onclick="alert('Fonction bientôt disponible')">Retirer</button>
+ </div>
+ <div class="card">
+  <h3>💰 Gagner de l'argent</h3>
+  <p>Découvrez les opportunités CashPlus.</p>
+  <button class="gold" onclick="alert('Bientôt disponible')">Découvrir</button>
+ </div>
+ <div class="card">
+  <h3>📊 Historique</h3>
+  <p>Aucune transaction pour le moment.</p>
+ </div>
+ <div class="card">
+  <h3>👤 Mon compte</h3>
+  <p>Gérez votre profil CashPlus.</p>
+ </div>
+</main>
+<footer>© 2026 CashPlus - Tous droits réservés</footer>
+</body>
+</html>
