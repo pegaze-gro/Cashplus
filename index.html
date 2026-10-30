@@ -1,108 +1,287 @@
+
 <!DOCTYPE html>
-      <button id="logout">Se déconnecter</button>
-    </div>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CashPlus</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101010;color:white;
+ font-family:Arial,sans-serif;padding:20px
+}
+.container{max-width:480px;margin:auto}
+h1{color:#e6b832;text-align:center}
+.subtitle{text-align:center;color:#aaa}
+.card{
+ background:#202020;padding:20px;
+ border-radius:15px;margin:16px 0;
+ border:1px solid #393020
+}
+.balance{text-align:center}
+.balance h2{color:#e6b832;font-size:32px}
+button{
+ width:100%;padding:14px;margin:7px 0;
+ border:0;border-radius:9px;
+ background:#d6a92d;color:#111;
+ font-weight:bold;font-size:16px
+}
+input,select{
+ width:100%;padding:13px;margin:8px 0;
+ border-radius:8px;border:1px solid #555;
+ background:#292929;color:white
+}
+.hidden{display:none}
+.secondary{background:#333;color:white}
+.operation{
+ padding:12px;border-bottom:1px solid #444
+}
+.small{color:#aaa;font-size:12px}
+#message{color:#e6b832;text-align:center}
+</style>
+</head>
+<body>
+<div class="container">
 
-    <p id="message"></p>
-  </div>
+<h1>💰 CashPlus</h1>
+<p class="subtitle">Votre argent, votre liberté.</p>
 
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<div id="phone-section" class="card">
+<h3>Créer mon compte / Connexion</h3>
+<input id="phone" placeholder="+228XXXXXXXX">
+<div id="recaptcha-container"></div>
+<button id="send-code">Recevoir mon code SMS</button>
+</div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBZ8-SjXWdNMtlRx4lqNa6h4qB5FYcnXzg",
-      authDomain: "cashplus-9223b.firebaseapp.com",
-      projectId: "cashplus-9223b",
-      storageBucket: "cashplus-9223b.firebasestorage.app",
-      messagingSenderId: "1041825348002",
-      appId: "1:1041825348002:web:1a438cafdad73ee3f51afb"
-    };
+<div id="code-section" class="card hidden">
+<h3>Vérification</h3>
+<input id="code" placeholder="Code reçu par SMS">
+<button id="verify-code">Vérifier mon numéro</button>
+</div>
 
-    firebase.initializeApp(firebaseConfig);
+<div id="account-section" class="hidden">
 
-    const auth = firebase.auth();
-    auth.languageCode = "fr";
+<div class="card balance">
+<p>Mon solde disponible</p>
+<h2 id="balance">0 F CFA</h2>
+<p id="user-phone" class="small"></p>
+</div>
 
-    let confirmationResult;
-    let recaptchaVerifier;
+<div class="card">
+<button onclick="showSection('deposit')">＋ Dépôt</button>
+<button onclick="showSection('withdraw')">− Retrait</button>
+<button onclick="showSection('transfer')">⇄ Transfert</button>
+<button class="secondary" onclick="showSection('history')">Historique</button>
+</div>
 
-    const message = document.getElementById("message");
+<div id="deposit" class="card hidden">
+<h3>Faire un dépôt</h3>
+<select id="deposit-method">
+<option value="TMoney">TMoney</option>
+<option value="Flooz">Flooz</option>
+</select>
+<input id="deposit-amount" type="number" placeholder="Montant en F CFA">
+<p class="small">Démonstration uniquement : aucun paiement réel.</p>
+<button onclick="deposit()">Continuer</button>
+<button class="secondary" onclick="hideSections()">Retour</button>
+</div>
 
-    function showMessage(text) {
-      message.textContent = text;
-    }
+<div id="withdraw" class="card hidden">
+<h3>Faire un retrait</h3>
+<select id="withdraw-method">
+<option value="TMoney">TMoney</option>
+<option value="Flooz">Flooz</option>
+</select>
+<input id="withdraw-phone" placeholder="Numéro Mobile Money">
+<input id="withdraw-amount" type="number" placeholder="Montant (minimum 1000 F)">
+<p class="small">Démonstration uniquement : aucun argent ne sera envoyé.</p>
+<button onclick="withdraw()">Continuer</button>
+<button class="secondary" onclick="hideSections()">Retour</button>
+</div>
 
-    function setupRecaptcha() {
-      if (recaptchaVerifier) {
-        recaptchaVerifier.clear();
-      }
+<div id="transfer" class="card hidden">
+<h3>Transfert CashPlus</h3>
+<input id="receiver" placeholder="Téléphone du destinataire">
+<input id="transfer-amount" type="number" placeholder="Montant">
+<button onclick="transfer()">Continuer</button>
+<button class="secondary" onclick="hideSections()">Retour</button>
+</div>
 
-      recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
-        "recaptcha-container",
-        { size: "normal" }
-      );
+<div id="history" class="card hidden">
+<h3>Historique des opérations</h3>
+<div id="history-list">Aucune opération.</div>
+<button class="secondary" onclick="hideSections()">Retour</button>
+</div>
 
-      recaptchaVerifier.render();
-    }
+<div class="card">
+<button class="secondary" id="logout">Se déconnecter</button>
+</div>
+</div>
 
-    setupRecaptcha();
+<p id="message"></p>
+<p class="small" style="text-align:center">
+CashPlus — Version de démonstration
+</p>
+</div>
 
-    document.getElementById("send-code").addEventListener("click", async () => {
-      const phone = document.getElementById("phone").value.trim();
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 
-      if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
-        showMessage("Entre un numéro complet avec son indicatif, par exemple +228XXXXXXXX.");
-        return;
-      }
+<script>
+const firebaseConfig = {
+ apiKey:"AIzaSyBZ8-SjXWdNMtlRx4lqNa6h4qB5FYcnXzg",
+ authDomain:"cashplus-9223b.firebaseapp.com",
+ projectId:"cashplus-9223b",
+ storageBucket:"cashplus-9223b.firebasestorage.app",
+ messagingSenderId:"1041825348002",
+ appId:"1:1041825348002:web:1a438cafdad73ee3f51afb"
+};
 
-      try {
-        showMessage("Envoi du SMS en cours...");
-        confirmationResult = await auth.signInWithPhoneNumber(
-          phone,
-          recaptchaVerifier
-        );
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();
+auth.languageCode="fr";
 
-        document.getElementById("phone-section").classList.add("hidden");
-        document.getElementById("code-section").classList.remove("hidden");
-        showMessage("Code envoyé ! Vérifie tes SMS.");
-      } catch (error) {
-        showMessage("Erreur : " + error.message);
-        setupRecaptcha();
-      }
-    });
+let confirmationResult;
+let recaptchaVerifier;
+let balance=0;
+let history=[];
 
-    document.getElementById("verify-code").addEventListener("click", async () => {
-      const code = document.getElementById("code").value.trim();
+const message=document.getElementById("message");
 
-      if (!code) {
-        showMessage("Entre le code reçu par SMS.");
-        return;
-      }
+function showMessage(t){message.textContent=t;}
 
-      try {
-        showMessage("Vérification en cours...");
-        await confirmationResult.confirm(code);
-        showMessage("Ton numéro est vérifié !");
-      } catch (error) {
-        showMessage("Code incorrect ou expiré. Réessaie.");
-      }
-    });
+function setupRecaptcha(){
+ if(recaptchaVerifier)recaptchaVerifier.clear();
+ recaptchaVerifier=new firebase.auth.RecaptchaVerifier(
+ "recaptcha-container",{size:"normal"}
+ );
+ recaptchaVerifier.render();
+}
+setupRecaptcha();
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        document.getElementById("phone-section").classList.add("hidden");
-        document.getElementById("code-section").classList.add("hidden");
-        document.getElementById("account-section").classList.remove("hidden");
-        document.getElementById("user-phone").textContent =
-          "Numéro vérifié : " + user.phoneNumber;
-      }
-    });
+document.getElementById("send-code").onclick=async()=>{
+ const phone=document.getElementById("phone").value.trim();
+ if(!/^\+[1-9]\d{7,14}$/.test(phone)){
+ showMessage("Entre un numéro complet avec indicatif.");
+ return;
+ }
+ try{
+ showMessage("Envoi du SMS...");
+ confirmationResult=await auth.signInWithPhoneNumber(phone,recaptchaVerifier);
+ document.getElementById("phone-section").classList.add("hidden");
+ document.getElementById("code-section").classList.remove("hidden");
+ showMessage("Code envoyé !");
+ }catch(e){
+ showMessage("Erreur : "+e.message);
+ setupRecaptcha();
+ }
+};
 
-    document.getElementById("logout").addEventListener("click", async () => {
-      await auth.signOut();
-      location.reload();
-    });
-  </script>
+document.getElementById("verify-code").onclick=async()=>{
+ try{
+ await confirmationResult.confirm(document.getElementById("code").value.trim());
+ showMessage("Numéro vérifié !");
+ }catch(e){
+ showMessage("Code incorrect ou expiré.");
+ }
+};
 
+auth.onAuthStateChanged(user=>{
+ if(user){
+ document.getElementById("phone-section").classList.add("hidden");
+ document.getElementById("code-section").classList.add("hidden");
+ document.getElementById("account-section").classList.remove("hidden");
+ document.getElementById("user-phone").textContent=
+ "Numéro vérifié : "+user.phoneNumber;
+ }else{
+ document.getElementById("phone-section").classList.remove("hidden");
+ document.getElementById("account-section").classList.add("hidden");
+ }
+});
+
+function showSection(id){
+ hideSections();
+ document.getElementById(id).classList.remove("hidden");
+}
+function hideSections(){
+ ["deposit","withdraw","transfer","history"].forEach(id=>
+ document.getElementById(id).classList.add("hidden")
+ );
+}
+
+function updateBalance(){
+ document.getElementById("balance").textContent=
+ balance.toLocaleString("fr-FR")+" F CFA";
+}
+
+function addHistory(type,amount,details){
+ history.unshift({
+ type,amount,details,
+ date:new Date().toLocaleString("fr-FR")
+ });
+ document.getElementById("history-list").innerHTML=
+ history.map(x=>
+ `<div class="operation">
+ <b>${x.type}</b> : ${x.amount.toLocaleString("fr-FR")} F CFA
+ <div class="small">${x.details} — ${x.date}</div>
+ </div>`
+ ).join("");
+}
+
+function deposit(){
+ const amount=Number(document.getElementById("deposit-amount").value);
+ const method=document.getElementById("deposit-method").value;
+ if(!Number.isFinite(amount)||amount<1){
+ showMessage("Montant invalide.");return;
+ }
+ balance+=amount;
+ updateBalance();
+ addHistory("Dépôt démo",amount,method);
+ showMessage("Dépôt de démonstration effectué.");
+ hideSections();
+}
+
+function withdraw(){
+ const amount=Number(document.getElementById("withdraw-amount").value);
+ const phone=document.getElementById("withdraw-phone").value.trim();
+ const method=document.getElementById("withdraw-method").value;
+ if(!Number.isFinite(amount)||amount<1000){
+ showMessage("Retrait minimum : 1000 F CFA.");return;
+ }
+ if(amount>balance){
+ showMessage("Solde insuffisant.");return;
+ }
+ if(!phone){
+ showMessage("Entre le numéro de retrait.");return;
+ }
+ balance-=amount;
+ updateBalance();
+ addHistory("Retrait démo",amount,method+" - "+phone);
+ showMessage("Retrait simulé avec succès.");
+ hideSections();
+}
+
+function transfer(){
+ const amount=Number(document.getElementById("transfer-amount").value);
+ const receiver=document.getElementById("receiver").value.trim();
+ if(!Number.isFinite(amount)||amount<=0||!receiver){
+ showMessage("Vérifie le numéro et le montant.");return;
+ }
+ if(amount>balance){
+ showMessage("Solde insuffisant.");return;
+ }
+ balance-=amount;
+ updateBalance();
+ addHistory("Transfert démo",amount,"Destinataire : "+receiver);
+ showMessage("Transfert simulé avec succès.");
+ hideSections();
+}
+
+document.getElementById("logout").onclick=async()=>{
+ await auth.signOut();
+ location.reload();
+};
+</script>
 </body>
 </html>
