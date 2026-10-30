@@ -1,48 +1,185 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CashPlus</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#090909;color:white;font-family:Arial,sans-serif}
-header{background:#111;padding:25px;text-align:center;border-bottom:2px solid #d4af37}
-h1{color:#d4af37;font-size:32px}
-main{padding:20px;max-width:600px;margin:auto}
-.card{background:#191919;padding:22px;border-radius:15px;margin:18px 0;border:1px solid #51451e}
-.balance{font-size:32px;color:#d4af37;font-weight:bold}
-button{background:#d4af37;color:#111;border:0;padding:13px;border-radius:8px;font-weight:bold;width:100%;margin-top:12px}
-input{width:100%;padding:13px;margin-top:10px;border-radius:8px;border:1px solid #555;background:#222;color:white}
-h2{color:#d4af37}
-footer{text-align:center;padding:25px;color:#aaa}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CashPlus</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 25px;
+      background: #101010;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    .container {
+      max-width: 420px;
+      margin: 35px auto;
+      padding: 25px;
+      background: #1c1c1c;
+      border: 1px solid #c9a227;
+      border-radius: 15px;
+    }
+    h1, h2 { color: #d4af37; }
+    input, button {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    input {
+      background: #292929;
+      color: white;
+      border: 1px solid #777;
+    }
+    button {
+      background: #d4af37;
+      color: #111;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; }
+    #message { color: #d4af37; }
+    #recaptcha-container {
+      display: flex;
+      justify-content: center;
+      margin: 15px 0;
+    }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-<header>
-<h1>CashPlus</h1>
-<p>Votre argent, votre liberté.</p>
-</header>
-<main>
-<div class="card">
-<h2>Mon solde</h2>
-<div class="balance">0 FCFA</div>
-<p>Bienvenue sur CashPlus !</p>
-</div>
-<div class="card">
-<h2>Créer un compte</h2>
-<input type="text" placeholder="Votre nom complet">
-<input type="tel" placeholder="Votre numéro de téléphone">
-<input type="password" placeholder="Créer un mot de passe">
-<button onclick="alert('Inscription bientôt disponible !')">S'inscrire</button>
-</div>
-<div class="card">
-<h2>Retrait</h2>
-<p>Retrait minimum : 1 000 FCFA</p>
-<input type="number" placeholder="Montant à retirer">
-<button onclick="alert('Service de retrait bientôt disponible !')">Demander un retrait</button>
-</div>
-</main>
-<footer>© 2026 CashPlus - Tous droits réservés</footer>
+
+  <div class="container">
+    <h1>CashPlus</h1>
+    <p>Votre argent, votre liberté.</p>
+
+    <h2>Créer mon compte</h2>
+
+    <div id="phone-section">
+      <input id="phone" type="tel" value="+228" placeholder="+228XXXXXXXX">
+      <div id="recaptcha-container"></div>
+      <button id="send-code">Recevoir le code SMS</button>
+    </div>
+
+    <div id="code-section" class="hidden">
+      <p>Entrez le code reçu par SMS.</p>
+      <input id="code" type="text" inputmode="numeric"
+             placeholder="Code de vérification">
+      <button id="verify-code">Vérifier le code</button>
+    </div>
+
+    <div id="account-section" class="hidden">
+      <h2>Bienvenue sur CashPlus !</h2>
+      <p id="user-phone"></p>
+      <button id="logout">Se déconnecter</button>
+    </div>
+
+    <p id="message"></p>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZ8-SjXWdNMtlRx4lqNa6h4qB5FYcnXzg",
+      authDomain: "cashplus-9223b.firebaseapp.com",
+      projectId: "cashplus-9223b",
+      storageBucket: "cashplus-9223b.firebasestorage.app",
+      messagingSenderId: "1041825348002",
+      appId: "1:1041825348002:web:1a438cafdad73ee3f51afb"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+    auth.languageCode = "fr";
+
+    let confirmationResult;
+    let recaptchaVerifier;
+
+    const message = document.getElementById("message");
+
+    function showMessage(text) {
+      message.textContent = text;
+    }
+
+    function setupRecaptcha() {
+      if (recaptchaVerifier) {
+        recaptchaVerifier.clear();
+      }
+
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+        "recaptcha-container",
+        { size: "normal" }
+      );
+
+      recaptchaVerifier.render();
+    }
+
+    setupRecaptcha();
+
+    document.getElementById("send-code").addEventListener("click", async () => {
+      const phone = document.getElementById("phone").value.trim();
+
+      if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
+        showMessage("Entre un numéro complet avec son indicatif, par exemple +228XXXXXXXX.");
+        return;
+      }
+
+      try {
+        showMessage("Envoi du SMS en cours...");
+        confirmationResult = await auth.signInWithPhoneNumber(
+          phone,
+          recaptchaVerifier
+        );
+
+        document.getElementById("phone-section").classList.add("hidden");
+        document.getElementById("code-section").classList.remove("hidden");
+        showMessage("Code envoyé ! Vérifie tes SMS.");
+      } catch (error) {
+        showMessage("Erreur : " + error.message);
+        setupRecaptcha();
+      }
+    });
+
+    document.getElementById("verify-code").addEventListener("click", async () => {
+      const code = document.getElementById("code").value.trim();
+
+      if (!code) {
+        showMessage("Entre le code reçu par SMS.");
+        return;
+      }
+
+      try {
+        showMessage("Vérification en cours...");
+        await confirmationResult.confirm(code);
+        showMessage("Ton numéro est vérifié !");
+      } catch (error) {
+        showMessage("Code incorrect ou expiré. Réessaie.");
+      }
+    });
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        document.getElementById("phone-section").classList.add("hidden");
+        document.getElementById("code-section").classList.add("hidden");
+        document.getElementById("account-section").classList.remove("hidden");
+        document.getElementById("user-phone").textContent =
+          "Numéro vérifié : " + user.phoneNumber;
+      }
+    });
+
+    document.getElementById("logout").addEventListener("click", async () => {
+      await auth.signOut();
+      location.reload();
+    });
+  </script>
+
 </body>
 </html>
